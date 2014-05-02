@@ -1,9 +1,9 @@
 package com.soypig.hymnal.parser;
 
 import com.soypig.hymnal.Hymn;
-import com.sun.tools.javac.util.List;
 
 import java.io.InputStream;
+import java.util.List;
 
 public interface Parser {
 
