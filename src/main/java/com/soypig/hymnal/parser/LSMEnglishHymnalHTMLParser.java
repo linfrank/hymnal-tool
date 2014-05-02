@@ -18,11 +18,11 @@ public class LSMEnglishHymnalHTMLParser implements Parser{
   public final static Locale[] LOCALES={
    Locale.KOREAN,
    Locale.CHINESE,
-   Locale.forLanguageTag("es"),
-   Locale.forLanguageTag("ru"),
-   Locale.forLanguageTag("tl"),
+   new Locale("es"),
+   new Locale("ru"),
+   new Locale("tl"),
    Locale.FRENCH,
-   Locale.forLanguageTag("pt")
+   new Locale("pt")
   };
 
   private DOMParser parser;

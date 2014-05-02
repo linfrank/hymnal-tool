@@ -13,7 +13,7 @@ public class Converter {
   public enum InputFormat {
 
     LSM_ENGLISH_HYMNAL_2014(
-     "e.g., 'LSM English Hymnal HTML [2014-02-01].7z' from https://sites.google.com/site/hymnalfeedback/home",
+     "e.g., 'LSM English Hymnal HTML [2014-02-01].7z'",
      "root folder after unzipping"
     );
 
@@ -170,17 +170,23 @@ public class Converter {
 
     if (args.length != 4) {
       System.err.println("Usage: <Input Format> <Input Path> <Output Format> <Output Path>");
+      System.err.println();
       System.err.println("Input options and descriptions:");
       for (int i = 0; i < InputFormat.values().length; i++) {
         InputFormat f = InputFormat.values()[i];
-        System.err.println(" " + i + ":" + f + " (" + f.desc + ")" + " input path is " + f.path);
+        System.err.println("  " + i + " : " + f + " (" + f.desc + ")");
+        System.err.println("      <Input Path> is " + f.path);
       }
+      System.err.println();
       System.err.println("Output options and descriptions:");
       for (int i = 0; i < OutputFormat.values().length; i++) {
         OutputFormat f = OutputFormat.values()[i];
-        System.err.println(" " + i + ":" + f + " (" + f.desc + ")" + " output path is " + f.path);
+        System.err.println("  " + i + " : " + f + " (" + f.desc + ")");
+        System.err.println("      <Input Path> is " + f.path);
       }
+      System.err.println();
       System.err.println("Example: 0 /Users/me/Desktop/hymnal_html/ 2 /Users/me/Desktop/hymnal.json");
+      return;
     }
 
     String inputFormat=args[0];
