@@ -42,7 +42,8 @@ public class LSMEnglishHymnalHTMLParser implements Parser{
     Hymn h=new Hymn();
 
     String title=findElement(d,"title").getTextContent().trim();
-    h.id=ID_PREFIX+Locale.ENGLISH.getDisplayLanguage()+"."+title.substring(title.indexOf('#')+1);
+    String number=title.substring(title.indexOf('#')+1);
+    h.id=ID_PREFIX+Locale.ENGLISH.getDisplayLanguage()+"."+number;
 
     List<Element> meta=findElements(findElement(d,"div","class","metabox"),"tr");
     for(Element e:findElements(meta.get(0),"a")){
@@ -69,6 +70,8 @@ public class LSMEnglishHymnalHTMLParser implements Parser{
     }
 
     h.properties.put("Category", findElements( findElement(d, "div", "class", "titlebox"), "span").get(1).getTextContent().trim());
+    h.properties.put("Book", "Hymns");
+    h.properties.put("BookNumber", number);
 
     List<Element> divs=findElements(d,"div");
     int stanza=0;
