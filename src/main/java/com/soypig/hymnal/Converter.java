@@ -188,6 +188,10 @@ public class Converter {
 
     converter.extract(inputPath,inputFormat);
     System.out.println("Extracted "+converter.getHymns().size()+" hymns from "+inputPath);
+
+    Extras extras=new Extras(converter.getHymns());
+    extras.addPrevNext();
+
     converter.write(outputPath,outputFormat);
     System.out.println("Wrote "+converter.getHymns().size()+" hymns to "+outputPath);
 

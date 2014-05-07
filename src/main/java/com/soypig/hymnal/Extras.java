@@ -75,7 +75,7 @@ public class Extras {
      .create();
 
     PrintWriter writer=new PrintWriter(new OutputStreamWriter(os,"utf8"));
-    writer.print(gson.toJson(byCategory));
+    writer.print(gson.toJson(byCategory.root));
     writer.close();
 
   }
@@ -115,7 +115,7 @@ public class Extras {
 
     Converter.InputFormat inputFormat=Converter.InputFormat.values()[Integer.parseInt(args[0])];
     String inputPath=args[1];
-    String outputPath=args[3];
+    String outputPath=args[2];
 
     Converter converter=new Converter();
 

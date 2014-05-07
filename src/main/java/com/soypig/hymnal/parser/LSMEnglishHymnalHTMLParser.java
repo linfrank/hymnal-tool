@@ -30,6 +30,7 @@ public class LSMEnglishHymnalHTMLParser implements Parser{
   public LSMEnglishHymnalHTMLParser()throws Exception{
 
     parser=new DOMParser();
+    //parser.setProperty("http://cyberneko.org/html/properties/default-encoding","" );
 
   }
 
