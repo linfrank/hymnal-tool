@@ -44,44 +44,34 @@ public class Converter {
 
   }
 
-  private InputFormat inputFormat;
-  private OutputFormat outputFormat;
-
   private List<Hymn> hymns;
 
-  private Parser parser;
   private Gson gson;
 
-  public Converter(InputFormat inputFormat, OutputFormat outputFormat) throws Exception {
-    this.inputFormat = inputFormat;
-    this.outputFormat = outputFormat;
+  public Converter() {
     hymns = new ArrayList<Hymn>(2000);
+    gson = new Gson();
+  }
+
+  public List<Hymn> getHymns(){return hymns;}
+
+  public void extract(InputStream is, InputFormat inputFormat) throws Exception {
+    Parser parser=null;
     switch (inputFormat) {
       case LSM_ENGLISH_HYMNAL_2014:
         parser = new LSMEnglishHymnalHTMLParser();
         break;
     }
-    switch (outputFormat) {
-      case JSON_SINGLE:
-      case JSON_MULTI:
-        gson = new Gson();
-        break;
-    }
-  }
-
-  public List<Hymn> getHymns(){return hymns;}
-
-  public void extract(InputStream is) throws Exception {
     hymns.addAll(parser.parse(is));
   }
 
-  public void extract(File inputPath) throws Exception {
+  public void extract(File inputPath, InputFormat inputFormat) throws Exception {
     switch (inputFormat) {
       case LSM_ENGLISH_HYMNAL_2014:
         if (inputPath.exists() && inputPath.isDirectory()) {
           for (File file : inputPath.listFiles()) {
             if(file.getName().toLowerCase().endsWith(".html")) {
-              extract(new FileInputStream(file));
+              extract(new FileInputStream(file),inputFormat);
             }
           }
         }
@@ -92,15 +82,15 @@ public class Converter {
     }
   }
 
-  public void extract(String inputPath) throws Exception {
+  public void extract(String inputPath, InputFormat inputFormat) throws Exception {
     switch (inputFormat) {
       case LSM_ENGLISH_HYMNAL_2014:
-        extract(new File(inputPath+"/html/hymns"));
+        extract(new File(inputPath+"/html/hymns"),inputFormat);
         break;
     }
   }
 
-  public void write(OutputStream os, Hymn hymn) throws Exception {
+  public void write(OutputStream os, Hymn hymn, OutputFormat outputFormat) throws Exception {
     PrintWriter writer = new PrintWriter(new OutputStreamWriter(os, "utf8"));
     switch (outputFormat) {
       case TXT_SINGLE:
@@ -115,14 +105,14 @@ public class Converter {
     writer.flush();
   }
 
-  public void write(File outputPath) throws Exception {
+  public void write(File outputPath, OutputFormat outputFormat) throws Exception {
     switch (outputFormat) {
       case TXT_SINGLE:
       case JSON_SINGLE:
         if (outputPath.getParentFile().exists() && !outputPath.isDirectory()) {
           FileOutputStream fos = new FileOutputStream(outputPath);
           for (Hymn hymn : hymns) {
-            write(fos, hymn);
+            write(fos, hymn, outputFormat);
           }
           fos.close();
         }
@@ -144,7 +134,7 @@ public class Converter {
           }
           for (Hymn hymn : hymns) {
             FileOutputStream fos = new FileOutputStream(outputPath + "/" + hymn.id + ext);
-            write(fos, hymn);
+            write(fos, hymn, outputFormat);
             fos.close();
           }
         }
@@ -155,13 +145,13 @@ public class Converter {
     }
   }
 
-  public void write(String inputPath) throws Exception {
+  public void write(String inputPath, OutputFormat outputFormat) throws Exception {
     switch (outputFormat) {
       case TXT_SINGLE:
       case TXT_MULTI:
       case JSON_SINGLE:
       case JSON_MULTI:
-        write(new File(inputPath));
+        write(new File(inputPath), outputFormat);
         break;
     }
   }
@@ -189,18 +179,16 @@ public class Converter {
       return;
     }
 
-    String inputFormat=args[0];
+    InputFormat inputFormat=InputFormat.values()[Integer.parseInt(args[0])];
     String inputPath=args[1];
-    String outputFormat=args[2];
+    OutputFormat outputFormat=OutputFormat.values()[Integer.parseInt(args[2])];
     String outputPath=args[3];
 
-    Converter converter=new Converter(
-     InputFormat.values()[Integer.parseInt(inputFormat)],
-     OutputFormat.values()[Integer.parseInt(outputFormat)]);
+    Converter converter=new Converter();
 
-    converter.extract(inputPath);
+    converter.extract(inputPath,inputFormat);
     System.out.println("Extracted "+converter.getHymns().size()+" hymns from "+inputPath);
-    converter.write(outputPath);
+    converter.write(outputPath,outputFormat);
     System.out.println("Wrote "+converter.getHymns().size()+" hymns to "+outputPath);
 
   }
