@@ -5,7 +5,6 @@ import com.soypig.hymnal.parser.LSMEnglishHymnalHTMLParser;
 import com.soypig.hymnal.parser.Parser;
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.List;
 
 public class Converter {
@@ -29,9 +28,9 @@ public class Converter {
 
   public enum OutputFormat {
 
-    TXT_SINGLE("one large plain text file", "output file path"),
+    TXT_SINGLE("one plain text hymns file", "output folder path"),
     TXT_MULTI("multiple plain text files, one per hymn", "output folder path"),
-    JSON_SINGLE("one large JSON file", "output file path"),
+    JSON_SINGLE("one JSON hymns file", "output folder path"),
     JSON_MULTI("multiple JSON files, one per hymn", "output folder path");
 
     public final String desc;
@@ -44,34 +43,45 @@ public class Converter {
 
   }
 
-  private List<Hymn> hymns;
+  private InputFormat inputFormat;
+
+  private Parser parser;
 
   private Gson gson;
 
-  public Converter() {
-    hymns = new ArrayList<Hymn>(2000);
-    gson = new Gson();
-  }
+  public Converter(InputFormat inputFormat) throws Exception {
 
-  public List<Hymn> getHymns(){return hymns;}
-
-  public void extract(InputStream is, InputFormat inputFormat) throws Exception {
-    Parser parser=null;
-    switch (inputFormat) {
+    this.inputFormat = inputFormat;
+    switch (this.inputFormat) {
       case LSM_ENGLISH_HYMNAL_2014:
         parser = new LSMEnglishHymnalHTMLParser();
         break;
     }
-    hymns.addAll(parser.parse(is));
+
+    gson = new Gson();
+
   }
 
-  public void extract(File inputPath, InputFormat inputFormat) throws Exception {
+  public List<Hymn> getHymns() {
+    return parser.getHymns();
+  }
+
+  public Hymnal getHymnal() {
+    return parser.getHymnal();
+  }
+
+  public void extract(InputStream is) throws Exception {
+    parser.parse(is);
+  }
+
+  public void extract(File inputPath) throws Exception {
     switch (inputFormat) {
       case LSM_ENGLISH_HYMNAL_2014:
-        if (inputPath.exists() && inputPath.isDirectory()) {
-          for (File file : inputPath.listFiles()) {
-            if(file.getName().toLowerCase().endsWith(".html")) {
-              extract(new FileInputStream(file),inputFormat);
+        File[] files = inputPath.listFiles();
+        if (files != null) {
+          for (File file : files) {
+            if (file.getName().toLowerCase().endsWith(".html")) {
+              extract(new FileInputStream(file));
             }
           }
         }
@@ -82,67 +92,76 @@ public class Converter {
     }
   }
 
-  public void extract(String inputPath, InputFormat inputFormat) throws Exception {
+  public void extract(String inputPath) throws Exception {
     switch (inputFormat) {
       case LSM_ENGLISH_HYMNAL_2014:
-        extract(new File(inputPath+"/html/hymns"),inputFormat);
+        extract(new File(inputPath + "/html/hymns"));
         break;
     }
   }
 
-  public void write(OutputStream os, Hymn hymn, OutputFormat outputFormat) throws Exception {
+  private void write(OutputStream os, Object hymnData, OutputFormat outputFormat) throws Exception {
     PrintWriter writer = new PrintWriter(new OutputStreamWriter(os, "utf8"));
     switch (outputFormat) {
       case TXT_SINGLE:
       case TXT_MULTI:
-        writer.println(hymn);
+        writer.println(hymnData);
         break;
       case JSON_SINGLE:
       case JSON_MULTI:
-        writer.println(gson.toJson(hymn));
+        writer.print(gson.toJson(hymnData));
         break;
     }
     writer.flush();
   }
 
   public void write(File outputPath, OutputFormat outputFormat) throws Exception {
+
+    if (!outputPath.exists() || !outputPath.isDirectory()) {
+      throw new IOException("Bad output path for " + outputFormat + ": " + outputPath);
+    }
+
+    FileOutputStream fos;
+
     switch (outputFormat) {
       case TXT_SINGLE:
+      case TXT_MULTI:
+        fos = new FileOutputStream(outputPath + "/" + getHymnal().id + ".hymnal.txt");
+        break;
       case JSON_SINGLE:
-        if (outputPath.getParentFile().exists() && !outputPath.isDirectory()) {
-          FileOutputStream fos = new FileOutputStream(outputPath);
-          for (Hymn hymn : hymns) {
-            write(fos, hymn, outputFormat);
-          }
-          fos.close();
+      case JSON_MULTI:
+        fos = new FileOutputStream(outputPath + "/" + getHymnal().id + ".hymnal.json");
+        break;
+      default:
+        fos = null;
+    }
+    write(fos, getHymnal(), outputFormat);
+    fos.close();
+
+    switch (outputFormat) {
+      case TXT_SINGLE:
+        fos = new FileOutputStream(outputPath + "/" + getHymnal().id + ".hymns.txt");
+        for (Hymn hymn : getHymns()) {
+          write(fos, hymn, outputFormat);
         }
-        else {
-          throw new IOException("Bad output path for " + outputFormat + ": " + outputPath);
-        }
+        fos.close();
+        break;
+      case JSON_SINGLE:
+        fos = new FileOutputStream(outputPath + "/" + getHymnal().id + ".hymns.json");
+        write(fos, getHymns(), outputFormat);
+        fos.close();
         break;
       case TXT_MULTI:
       case JSON_MULTI:
-        if (outputPath.exists() && outputPath.isDirectory()) {
-          String ext = "";
-          switch (outputFormat) {
-            case TXT_MULTI:
-              ext = ".txt";
-              break;
-            case JSON_MULTI:
-              ext = ".json";
-              break;
-          }
-          for (Hymn hymn : hymns) {
-            FileOutputStream fos = new FileOutputStream(outputPath + "/" + hymn.id + ext);
-            write(fos, hymn, outputFormat);
-            fos.close();
-          }
-        }
-        else {
-          throw new IOException("Bad output path for " + outputFormat + ": " + outputPath);
+        String ext = outputFormat == OutputFormat.JSON_MULTI ? ".json" : ".txt";
+        for (Hymn hymn : getHymns()) {
+          fos = new FileOutputStream(outputPath + "/" + hymn.id + ext);
+          write(fos, hymn, outputFormat);
+          fos.close();
         }
         break;
     }
+
   }
 
   public void write(String inputPath, OutputFormat outputFormat) throws Exception {
@@ -156,7 +175,7 @@ public class Converter {
     }
   }
 
-  public static void main(String[] args) throws Exception{
+  public static void main(String[] args) throws Exception {
 
     if (args.length != 4) {
       System.err.println("Usage: <Input Format> <Input Path> <Output Format> <Output Path>");
@@ -175,25 +194,22 @@ public class Converter {
         System.err.println("      <Input Path> is " + f.path);
       }
       System.err.println();
-      System.err.println("Example: 0 /Users/me/Desktop/hymnal_html/ 2 /Users/me/Desktop/hymnal.json");
+      System.err.println("Example: 0 /Users/me/input/hymnal_html/ 2 /Users/me/Desktop/output/");
       return;
     }
 
-    InputFormat inputFormat=InputFormat.values()[Integer.parseInt(args[0])];
-    String inputPath=args[1];
-    OutputFormat outputFormat=OutputFormat.values()[Integer.parseInt(args[2])];
-    String outputPath=args[3];
+    InputFormat inputFormat = InputFormat.values()[Integer.parseInt(args[0])];
+    String inputPath = args[1];
+    OutputFormat outputFormat = OutputFormat.values()[Integer.parseInt(args[2])];
+    String outputPath = args[3];
 
-    Converter converter=new Converter();
+    Converter converter = new Converter(inputFormat);
 
-    converter.extract(inputPath,inputFormat);
-    System.out.println("Extracted "+converter.getHymns().size()+" hymns from "+inputPath);
+    converter.extract(inputPath);
+    System.out.println("Extracted " + converter.getHymns().size() + " hymns from " + inputPath);
 
-    Extras extras=new Extras(converter.getHymns());
-    extras.addPrevNext();
-
-    converter.write(outputPath,outputFormat);
-    System.out.println("Wrote "+converter.getHymns().size()+" hymns to "+outputPath);
+    converter.write(outputPath, outputFormat);
+    System.out.println("Wrote " + converter.getHymns().size() + " hymns to " + outputPath);
 
   }
 
