@@ -48,7 +48,7 @@ public class Hymnal {
     order.add(number);
   }
 
-  public SortedSet getOrder(){
+  public SortedSet<String> getOrder(){
     return order;
   }
 
